@@ -1,35 +1,42 @@
 "use server";
-import { db } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 import { Todo } from "@/types/type";
 import { revalidatePath } from "next/cache";
 
 export const createTodo = async (formData: FormData) => {
   try {
-    const title = formData.get("title")?.toString().trim();
-    if (!title) {
+    const title = formData.get("title") as string;
+    if (!title || title.trim() === "") {
       throw new Error("Title is required");
     }
-    await db.query("INSERT INTO todos (title, completed) VALUES (?, ?)", [
-      title,
-      false,
-    ]);
-    console.log("Data addded successfully");
+    await prisma.todos.create({
+      data: {
+        title: title.trim(),
+        completed: false,
+      },
+    });
     revalidatePath("/");
-    return { success: true };
   } catch (error) {
-    console.error(error);
-    return { success: false };
+    console.error("Error creating todo:", error);
+
+    return {
+      success: false,
+      message: "Failed to create todo",
+    };
   }
 };
 
 export const getTodos = async () => {
   try {
-    const [data] = (await db.query(
-      "SELECT * FROM todos ORDER BY created_at DESC",
-    )) as [Todo[], unknown];
-    return data;
+    const todos = await prisma.todos.findMany({
+      orderBy: {
+        created_at: "desc",
+      },
+    });
+
+    return todos;
   } catch (error) {
-    console.error(error);
+    console.error("Error fetching todos:", error);
     return [];
   }
 };
@@ -39,12 +46,12 @@ export const updateTodo = async (title: string, id: number) => {
     if (!trimmedTitle) {
       throw new Error("Title is required");
     }
-    await db.query("UPDATE todos SET title = ? WHERE id = ?", [
-      trimmedTitle,
-      id,
-    ]);
+    await prisma.todos.update({
+      where: { id },
+      data: { title: trimmedTitle },
+    });
+    console.log("Todo updated");
     revalidatePath("/");
-    return { success: true };
   } catch (error) {
     console.error(error);
     return { success: false };
@@ -52,35 +59,35 @@ export const updateTodo = async (title: string, id: number) => {
 };
 export const toggleTodo = async (id: number, completed: boolean) => {
   try {
-    await db.query("UPDATE todos SET completed = ? WHERE id = ?", [
-      completed,
-      id,
-    ]);
+    await prisma.todos.update({
+      where: { id },
+      data: { completed },
+    });
 
     revalidatePath("/");
-
-    return { success: true };
   } catch (error) {
     console.error(error);
-    return { success: false };
   }
 };
 export const deleteTodo = async (id: number) => {
   try {
-    await db.query("DELETE FROM todos  WHERE id = ?", [id]);
+    await prisma.todos.delete({
+      where: { id },
+    });
     console.log("Todo deleted");
     revalidatePath("/");
-    return { success: true };
   } catch (error) {
     console.error(error);
-    return { success: false };
   }
 };
 export const getCompletedTodos = async () => {
   try {
-    const [data] = (await db.query(
-      "SELECT * FROM todos WHERE completed = 1 ORDER BY updated_at DESC",
-    )) as [Todo[], unknown];
+    const data = (await prisma.todos.findMany({
+      where: { completed: true },
+      orderBy: {
+        updated_at: "desc",
+      },
+    })) as [Todo[], unknown];
     revalidatePath("/completed");
     return data;
   } catch (error) {
@@ -90,10 +97,15 @@ export const getCompletedTodos = async () => {
 };
 export const getUnCompletedTodos = async () => {
   try {
-    const [data] = (await db.query(
-      "SELECT * FROM todos WHERE completed = 0 ORDER BY created_at DESC",
-    )) as [Todo[], unknown];
-    revalidatePath("/completed");
+    const data = (await prisma.todos.findMany({
+      where: {
+        completed: false,
+      },
+      orderBy: {
+        updated_at: "desc",
+      },
+    })) as [Todo[], unknown];
+    revalidatePath("/uncompleted");
     return data;
   } catch (error) {
     console.error(error);
@@ -102,16 +114,11 @@ export const getUnCompletedTodos = async () => {
 };
 export const getTodoById = async (id: number) => {
   try {
-    const [rows] = await db.query("SELECT * FROM todos WHERE id = ?", [id]);
-
-    const data = rows as Todo[];
-    console.log("sql :", data[0]);
-
-    if (data.length === 0) {
-      return null;
-    }
-
-    return data[0];
+    const rows = await prisma.todos.findFirst({
+      where: { id },
+    });
+    console.log(rows);
+    return rows;
   } catch (error) {
     console.error("Error fetching todo:", error);
     return null;
