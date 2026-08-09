@@ -1,7 +1,7 @@
 "use server";
 import { db } from "@/config/db";
 import { redirect } from "next/navigation";
-export const contactAction = async (previousState, formData) => {
+export const contactAction = async (formData) => {
   const fullName = formData.get("fullName");
   const email = formData.get("email");
   const message = formData.get("message");
@@ -10,6 +10,6 @@ export const contactAction = async (previousState, formData) => {
     [fullName, email, message],
   );
   console.log("data inserted successfully");
-  // return { success: true, message: "Data inserted successfully" };
-  redirect("/"); //only used in server components and server actions to redirect the user to a different page after the action is completed.
+  return { success: true, message: "Data inserted successfully" };
+  // redirect("/"); //only used in server components and server actions to redirect the user to a different page after the action is completed.
 };

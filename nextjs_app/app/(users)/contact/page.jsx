@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState, useTransition } from "react";
 import { contactAction } from "./contact.action";
 import { useFormStatus } from "react-dom";
 
@@ -11,12 +11,25 @@ import { useFormStatus } from "react-dom";
 //   console.log("Form Data:", { fullName, email, message });
 // };
 const Contactpage = () => {
-  const [state, formAction, isPending] = useActionState(contactAction, null); //used for form submission state management
+  // const [state, formAction, isPending] = useActionState(contactAction, null); //used for form submission state management
+  const [contactFormResponse, setcontactFormResponse] = useState(null);
+  const [isPending, startTransition] = useTransition();
+
+  const handleContactSubmit = async (formData) => {
+    startTransition(async () => { 
+      try {
+        const res = await contactAction(formData);
+        setcontactFormResponse(res);
+      } catch (error) {
+        console.error(error);
+      }
+    });
+  };
   return (
     <div className="w-full">
       <h2 className="text-gray-700 bg-sky-500 p-2 m-2">Contact Page</h2>
 
-      <form className="space-y-6" action={formAction}>
+      <form className="space-y-6" action={handleContactSubmit}>
         <label htmlFor="fullName" className="text-sm font-medium">
           Enter Name
         </label>
@@ -57,12 +70,12 @@ const Contactpage = () => {
         <Submit />
       </form>
       <section className="mt-4">
-        {state && (
+        {contactFormResponse && (
           <div>
-            {state.success ? (
-              <p className="text-green-500">{state.message}</p>
+            {contactFormResponse.success ? (
+              <p className="text-green-500">{contactFormResponse.message}</p>
             ) : (
-              <p className="text-red-500">{state.message}</p>
+              <p className="text-red-500">{contactFormResponse.message}</p>
             )}
           </div>
         )}
