@@ -3,6 +3,7 @@ import { deleteTodo, toggleTodo, updateTodo } from "@/app/actions/todo.actions";
 import { Todo } from "@/types/type";
 import { Check, Pencil, Trash2, X, Eye } from "lucide-react";
 import Link from "next/link";
+import { easeInOut, motion } from "motion/react";
 import { useState } from "react";
 
 interface TodoItemProps {
@@ -19,7 +20,14 @@ const TodoItem = ({ todo }: TodoItemProps) => {
     setIsEditing(false);
   };
   return (
-    <div className="flex items-center justify-between rounded-xl bg-slate-900 p-4">
+    <motion.div
+      initial={{ opacity: 0, y: -10 }} // Initial state: hidden and slightly above
+      animate={{ opacity: 1, y: 0 }} // Animate to: visible and in place
+      transition={{ duration: 0.2, ease: easeInOut, delay: 0.5 }} // Animation duration
+      whileHover={{ scale: 1.02 }} // Slightly scale up on hover
+      whileTap={{ scale: 0.98 }} // Slightly scale down on tap
+      className="flex items-center justify-between rounded-xl bg-slate-900 p-4"
+    >
       <div className="flex flex-1 items-center gap-4">
         <input
           type="checkbox"
@@ -93,7 +101,7 @@ const TodoItem = ({ todo }: TodoItemProps) => {
           </>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 };
 
